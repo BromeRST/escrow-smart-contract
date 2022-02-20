@@ -4,11 +4,6 @@ pragma solidity ^0.8.4;
 import "hardhat/console.sol";
 
 contract Escrow {
-    address public arbiter;
-    address payable public beneficiary;
-    address payable public depositor;
-    address payable public owner;
-
     struct Contract {
         address Arbiter;
         address payable Beneficiary;
@@ -32,10 +27,6 @@ contract Escrow {
         bool isApprove,
         bool dismiss
     );
-
-    constructor() {
-        owner = payable(msg.sender);
-    }
 
     function approve(uint256 i) external {
         require(!contracts[i].IsApproved, "contract has been already approved");
@@ -100,14 +91,12 @@ contract Escrow {
         payable
     {
         require(msg.value > 0, "insert the value of your escrow");
-        arbiter = _arbiter;
-        beneficiary = _beneficiary;
-        depositor = payable(msg.sender);
+
         contracts.push(
             Contract(
-                arbiter,
-                beneficiary,
-                depositor,
+                _arbiter,
+                _beneficiary,
+                payable(msg.sender),
                 block.timestamp,
                 msg.value,
                 false,
@@ -116,9 +105,9 @@ contract Escrow {
             )
         );
         emit NewContract(
-            arbiter,
-            beneficiary,
-            depositor,
+            _arbiter,
+            _beneficiary,
+            msg.sender,
             block.timestamp,
             msg.value,
             false,
