@@ -27,12 +27,15 @@ const main = async () => {
     await escrowContract.connect(deployer).writeNewContract(address2.address, address3.address, {
         value: hre.ethers.utils.parseEther("90"),
     });
+    
     contractBalance = await hre.ethers.provider.getBalance(escrowContract.address);
     console.log(
         "Contract balance:",
         hre.ethers.utils.formatEther(contractBalance)
       );
-    await escrowContract.dismissEscrow(1);
+
+    await escrowContract.connect(address2).dismissEscrow(1);
+
     contractBalance = await hre.ethers.provider.getBalance(escrowContract.address);
     console.log(
         "Contract balance:",

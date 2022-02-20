@@ -13,6 +13,7 @@ contract Escrow {
         address Arbiter;
         address payable Beneficiary;
         address payable Depositor;
+        uint256 timestamp;
         uint256 Amount;
         bool ArbiterApproved;
         bool IsApproved;
@@ -25,6 +26,7 @@ contract Escrow {
         address indexed arb,
         address indexed ben,
         address indexed dep,
+        uint256 timestamp,
         uint256 amount,
         bool arbApprove,
         bool isApprove,
@@ -36,8 +38,15 @@ contract Escrow {
     }
 
     function approve(uint256 i) external {
-        require(contracts[i].ArbiterApproved);
-        require(msg.sender == contracts[i].Arbiter);
+        require(!contracts[i].IsApproved, "contract has been already approved");
+        require(
+            contracts[i].ArbiterApproved,
+            "the arbiter is not approved from beneficiary yet"
+        );
+        require(
+            msg.sender == contracts[i].Arbiter,
+            "you are not the contracts's arbiter"
+        );
         uint256 balance = contracts[i].Amount;
         (bool success, ) = contracts[i].Beneficiary.call{value: balance}("");
         contracts[i].IsApproved = true;
@@ -45,7 +54,10 @@ contract Escrow {
     }
 
     function approveArbiter(uint256 i) external {
-        require(msg.sender == contracts[i].Beneficiary);
+        require(
+            msg.sender == contracts[i].Beneficiary,
+            "you are not the escrow's beneficiary"
+        );
         contracts[i].ArbiterApproved = true;
         console.log("arbiter has been approved from beneficiary too");
     }
@@ -55,24 +67,39 @@ contract Escrow {
     }
 
     function dismissEscrow(uint256 i) external {
-        require(!contracts[i].Dismissed);
         require(
-            msg.sender == contracts[i].Depositor ||
-                msg.sender == contracts[i].Beneficiary ||
-                msg.sender == contracts[i].Arbiter
+            !contracts[i].Dismissed,
+            "this escrow has been already dismissed"
+        );
+        require(
+            !contracts[i].IsApproved,
+            "this escrow has been approved you can't dismiss it"
+        );
+        require(
+            msg.sender == contracts[i].Arbiter,
+            "you are not the escrow's arbiter"
         );
         uint256 balance = contracts[i].Amount;
         (bool success, ) = contracts[i].Depositor.call{value: balance}("");
         contracts[i].Dismissed = true;
         delete contracts[i];
-        console.log("contract dismissed from depositor");
+        console.log("escrow dismissed");
+    }
+
+    function deleteContract(uint256 i) external {
+        require(contracts[i].IsApproved);
+        require(
+            msg.sender == contracts[i].Depositor ||
+                msg.sender == contracts[i].Beneficiary
+        );
+        delete contracts[i];
     }
 
     function writeNewContract(address _arbiter, address payable _beneficiary)
         external
         payable
     {
-        require(msg.value > 0);
+        require(msg.value > 0, "insert the value of your escrow");
         arbiter = _arbiter;
         beneficiary = _beneficiary;
         depositor = payable(msg.sender);
@@ -81,6 +108,7 @@ contract Escrow {
                 arbiter,
                 beneficiary,
                 depositor,
+                block.timestamp,
                 msg.value,
                 false,
                 false,
@@ -91,6 +119,7 @@ contract Escrow {
             arbiter,
             beneficiary,
             depositor,
+            block.timestamp,
             msg.value,
             false,
             false,
